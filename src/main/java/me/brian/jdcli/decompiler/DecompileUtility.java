@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 
 public class DecompileUtility {
 
+    private static ExecutorService pool = null;
+
     public static void extractJar(File jar, File outputDirectory) throws DecompileException {
 
         try {
@@ -29,27 +31,6 @@ public class DecompileUtility {
             }
 
             Files.copy(jar.toPath(), tempJarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            /*
-            // call the `unzip -B [jar]` command to extract .class files for us in the temporary directory
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.command("unzip", "-B", "-o", tempJarFile.getAbsolutePath());
-
-            processBuilder.directory(outputDirectory);
-            Process jarExtractionProcess = processBuilder.start();
-            jarExtractionProcess.getInputStream().transferTo(System.out);
-            int exitCode;
-
-            // wait for the jar xf command to finish.
-            try {
-                exitCode = jarExtractionProcess.waitFor();
-            } catch (InterruptedException exception) {
-                throw new DecompileException("encountered an interrupt while waiting for jar extraction to complete");
-            }
-
-            if (exitCode != 0) {
-                throw new DecompileException("encountered a non-zero exit code (" + exitCode + ") while extracting jar");
-            }
-            */
 
             try {
                 ArchiveUtility.unarchive(tempJarFile, outputDirectory);
@@ -124,7 +105,7 @@ public class DecompileUtility {
     }
 
     private static void _writeErrorFile(File classFile, String error) {
-        try (FileWriter writer = new FileWriter(classFile)) {
+        try (FileWriter writer = new FileWriter(classFile + ".error")) {
             writer.write(error);
         } catch (IOException exception) {
             System.out.println("Unhandled IO exception while writing error file:");
@@ -145,7 +126,11 @@ public class DecompileUtility {
             return;
         }
 
-        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+        if (pool == null || pool.isShutdown()) {
+            pool = Executors.newSingleThreadExecutor();
+        }
+
+        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
             try {
                 if (verbose) {
                     System.out.println("[verbose] decompiling " + classFile.getPath() + "...");
@@ -161,17 +146,20 @@ public class DecompileUtility {
                 }
                 _writeErrorFile(classFile, "/* " + exception.getMessage() + " */");
             }
-        });
+            return null;
+        }, pool);
 
         try {
             future.get(1, TimeUnit.SECONDS);
         } catch (InterruptedException exception) {
-            // not doing anything here, continue exiting process
+            pool.shutdown();
         } catch (ExecutionException exception) {
             exception.printStackTrace();
+            pool.shutdown();
         } catch (TimeoutException exception) {
             System.out.println("Timeout occurred while trying to decompile " + classFile + ", skipping...");
             _writeErrorFile(classFile, "/* timeout occurred while trying to decompile */");
+            pool.shutdown();
         }
     }
 

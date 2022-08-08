@@ -80,3 +80,4 @@ fabric.properties
 
 # other:
 target/
+**/*.DS_Store
