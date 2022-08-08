@@ -42,7 +42,7 @@ public class DecompileClassCommand implements ICommandHandler {
     }
 
     public String getUsage() {
-        return "jdcli dj|decompile-jar <jar file> [output directory] [--verbose]";
+        return "jdcli dj|decompile-jar <jar file> [--verbose]";
     }
 
 }

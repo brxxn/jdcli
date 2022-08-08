@@ -12,7 +12,7 @@ public class JDCliRunner {
         System.out.println("valid commands:");
         System.out.println("  jdcli dj|decompile-jar <jar file> [output directory] [--verbose] [--skip-cleanup] - Decompile a jar file into a directory");
         System.out.println("  jdcli dcs|decompile-classes <directory> [--verbose] [--delete-class-files] - Decompile classes in a directory");
-        System.out.println("  jdcli dc|decompile-class <base directory> <file> [output name] - Decompile a .class file");
+        System.out.println("  jdcli dc|decompile-class <base directory> <file> - Decompile a .class file");
         System.out.println("  jdcli cleanup <directory> - removes all .class files in a directory");
         System.out.println("  jdcli h|help - Show this menu");
         System.out.println("  jdcli v|version - Show version information");
